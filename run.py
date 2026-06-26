@@ -12,6 +12,7 @@ Fully self-hosted: models download once, then everything runs offline.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -30,12 +31,21 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("-i", "--input", default="input", type=Path, help="input folder (default: input)")
     p.add_argument("-o", "--output", default="output", type=Path, help="output folder (default: output)")
     p.add_argument(
-        "-t", "--translator", default="opus", choices=sorted(TRANSLATORS),
-        help="translation backend (default: opus)",
+        "-t", "--translator", default="qwen", choices=sorted(TRANSLATORS),
+        help="translation backend (default: qwen, a local LLM via Ollama)",
+    )
+    p.add_argument(
+        "--ollama-model", default=None,
+        help="Ollama model for the 'qwen' translator (default: qwen3:1.7b; "
+             "use qwen3:8b or larger on a fast machine)",
     )
     p.add_argument(
         "--detect-max-side", type=int, default=2000,
-        help="downscale long edge to this many px for detection only (default: 1600)",
+        help="downscale long edge to this many px for detection only (default: 2000)",
+    )
+    p.add_argument(
+        "--bubble-opacity", type=float, default=0.0,
+        help="speech-box opacity behind text, 0.0 (no box, halo only) to 1.0 (solid white) (default: 0.0)",
     )
     p.add_argument("--dump-text", action="store_true", help="also write a .txt of JA/EN per page")
     return p.parse_args(argv)
@@ -54,6 +64,9 @@ def main(argv=None) -> int:
         print(f"error: no images in {args.input}", file=sys.stderr)
         return 1
 
+    if args.ollama_model:
+        os.environ["MTL_OLLAMA_MODEL"] = args.ollama_model
+
     print(f"Device: {describe_device()}")
     print(f"Translator: {args.translator}")
     print(f"Loading models (first run downloads them once)...", flush=True)
@@ -63,7 +76,12 @@ def main(argv=None) -> int:
     for idx, path in enumerate(pages, 1):
         t0 = time.time()
         image = Image.open(path)
-        result = translate_page(image, translator, detect_max_side=args.detect_max_side)
+        result = translate_page(
+            image,
+            translator,
+            detect_max_side=args.detect_max_side,
+            bubble_alpha=int(max(0.0, min(1.0, args.bubble_opacity)) * 255),
+        )
         out_path = args.output / path.name
         result.image.save(out_path)
         dt = time.time() - t0

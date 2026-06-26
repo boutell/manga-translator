@@ -46,6 +46,7 @@ def translate_page(
     detect_max_side: int = 1600,
     min_box_area: int = 200,
     max_box_area_frac: float = 0.10,
+    bubble_alpha: int = 0,
 ) -> PageResult:
     image = image.convert("RGB")
     page_area = image.width * image.height
@@ -62,7 +63,8 @@ def translate_page(
 
     bubbles = cluster.cluster_boxes(line_boxes)
 
-    out = image.copy()
+    # OCR every bubble first, then translate the whole page in one batch so an
+    # LLM backend can use cross-bubble context (and we pay model overhead once).
     regions: List[Region] = []
     for box in bubbles:
         x1, y1, x2, y2 = box
@@ -75,8 +77,15 @@ def translate_page(
         japanese = ocr.read(crop)
         if not japanese:
             continue
-        english = translator.translate(japanese)
-        regions.append(Region(box=box, japanese=japanese, english=english))
-        render.draw_block(out, box, english or japanese)
+        regions.append(Region(box=box, japanese=japanese))
 
+    englishes = translator.translate_batch([r.japanese for r in regions])
+    for region, english in zip(regions, englishes):
+        region.english = english
+
+    out = render.render_page(
+        image,
+        [(r.box, r.english or r.japanese) for r in regions],
+        bubble_alpha=bubble_alpha,
+    )
     return PageResult(image=out, regions=regions)
