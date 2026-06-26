@@ -1,0 +1,12 @@
+# All run fully on-device. Models are fetched once from public repos, then
+# the pipeline runs offline with no network calls per page.
+#
+# torch/torchvision are intentionally NOT pinned here so we can reuse an
+# existing (e.g. ROCm) system install instead of clobbering it. See setup.sh.
+manga-ocr>=0.1.11        # Japanese manga OCR (ViT encoder, trained on manga)
+easyocr>=1.7.0           # CRAFT text detection (we use its detector only)
+transformers>=4.30       # opus-mt translation (default translator)
+sentencepiece            # tokenizer for opus-mt / marian
+sacremoses               # marian tokenization helper
+pillow>=10.0             # rendering
+numpy
