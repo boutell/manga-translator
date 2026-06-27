@@ -16,10 +16,15 @@ from PIL import Image, ImageDraw, ImageFont
 Box = Tuple[int, int, int, int]
 
 _FONT_CANDIDATES = [
+    # Linux (origin machine)
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
     "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
     "/Library/Fonts/Arial Bold.ttf",
+    # macOS (modern paths under /System/Library/Fonts/Supplemental)
+    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+    "/System/Library/Fonts/Supplemental/Arial.ttf",
+    "/System/Library/Fonts/Helvetica.ttc",
 ]
 
 

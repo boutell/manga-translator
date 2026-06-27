@@ -21,12 +21,18 @@ def _overlap(a, b) -> bool:
     return not (a[2] < b[0] or b[2] < a[0] or a[3] < b[1] or b[3] < a[1])
 
 
-def cluster_boxes(boxes: List[Box], gap_ratio: float = 0.3) -> List[Box]:
+def cluster_boxes(boxes: List[Box], gap_ratio: float = 0.15) -> List[Box]:
     """Merge boxes whose padded rectangles touch. Padding scales with the
     median *shorter* side of the boxes. For vertical manga text the line boxes
     are tall, narrow columns, so the shorter side ~= column width — padding by
     that keeps columns of one bubble together without bridging across the whole
-    page (padding by height would chain every bubble into one)."""
+    page (padding by height would chain every bubble into one).
+
+    gap_ratio 0.15 (was 0.3): on dense 4-koma pages 0.3 chained distinct texts
+    (title, asides, sound effects) into panel-sized blobs that then garbled OCR
+    and tripped the oversized-box filter. 0.15 keeps a bubble's own columns
+    together while separating neighbours; pages with normal whitespace between
+    bubbles are unaffected (verified: their bubble counts barely move)."""
     if not boxes:
         return []
 

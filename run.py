@@ -36,8 +36,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     )
     p.add_argument(
         "--ollama-model", default=None,
-        help="Ollama model for the 'qwen' translator (default: qwen3:1.7b; "
-             "use qwen3:8b or larger on a fast machine)",
+        help="Ollama model for the 'qwen' translator "
+             "(default: qwen3:8b on macOS, qwen3:1.7b elsewhere)",
     )
     p.add_argument(
         "--detect-max-side", type=int, default=2000,

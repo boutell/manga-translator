@@ -29,8 +29,11 @@ def detect_boxes(image: np.ndarray) -> List[Box]:
     # EasyOCR returns (horizontal_list, free_list), one entry per image.
     horizontal_list, free_list = reader.detect(
         image,
-        # tuned a little looser than defaults so we catch sparse manga lettering
-        text_threshold=0.6,
+        # Looser than EasyOCR's defaults so we catch sparse/faint manga lettering
+        # and handwritten asides. 0.6 missed most of the gray pencil text on dense
+        # 4-koma pages; 0.4 recovers it. False positives on art are harmless —
+        # manga-ocr returns empty/garbage on them and the pipeline drops those.
+        text_threshold=0.4,
         low_text=0.3,
         link_threshold=0.3,
     )

@@ -11,10 +11,17 @@ import functools
 import json
 import os
 import re
+import sys
 import urllib.request
 from typing import Dict, List, Type
 
 from .device import get_device
+
+# Default Ollama model is platform-aware: the Mac (Metal) handles qwen3:8b well,
+# but on the origin AMD APU 8b overflows VRAM and falls back to slow CPU, so it
+# stays on the validated qwen3:1.7b there. Override via --ollama-model or the
+# MTL_OLLAMA_MODEL env var.
+_DEFAULT_OLLAMA_MODEL = "qwen3:8b" if sys.platform == "darwin" else "qwen3:1.7b"
 
 
 class Translator:
@@ -92,9 +99,9 @@ class OllamaTranslator(Translator):
     A whole page's bubbles go in one request so the model sees context and we
     pay model overhead once per page rather than per bubble.
 
-    Model is configurable via --ollama-model / MTL_OLLAMA_MODEL. Default
-    qwen3:1.7b (validated fast+good on the AMD APU); use qwen3:8b or larger on a
-    Mac for better quality.
+    Model is configurable via --ollama-model / MTL_OLLAMA_MODEL. Default is
+    platform-aware: qwen3:8b on macOS (Metal handles it), qwen3:1.7b elsewhere
+    (validated fast+good on the AMD APU, where 8b overflows VRAM).
     """
 
     HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
@@ -108,7 +115,7 @@ class OllamaTranslator(Translator):
     )
 
     def __init__(self, model: str | None = None) -> None:
-        self.model = model or os.environ.get("MTL_OLLAMA_MODEL", "qwen3:1.7b")
+        self.model = model or os.environ.get("MTL_OLLAMA_MODEL", _DEFAULT_OLLAMA_MODEL)
         # Fail fast with a clear message if the daemon isn't up.
         try:
             urllib.request.urlopen(f"{self.HOST}/api/tags", timeout=5).read()
